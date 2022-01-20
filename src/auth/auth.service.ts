@@ -1,56 +1,134 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './user.entity';
-import { UsersRepository } from './users.repository';
-import { AuthCredentialsInput } from './inputs/auth-credentials.input';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { JwtToken } from './interfaces/jwt-token.interface';
+import {
+  CreateUserInput,
+  LoginResponse,
+  LoginUserInput,
+  User,
+} from './user.entity';
+import { MongoRepository } from 'typeorm';
+import * as jwt from 'jsonwebtoken';
+import { AuthenticationError } from 'apollo-server-core';
+import { jwtConstants } from '../config/constants';
+import { UpdateUserInput } from '../graphql';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(UsersRepository) private usersRepository: UsersRepository,
-    private jwtService: JwtService,
+    @InjectRepository(User)
+    private readonly usersRepository: MongoRepository<User>,
   ) {}
 
-  async getUserById(id: string): Promise<User> {
-    return this.usersRepository.findOne({ id });
+  async findAll(offset: number, limit: number): Promise<User[]> {
+    return await this.usersRepository.find({
+      order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limit,
+      cache: true,
+    });
   }
 
-  async signUp(authCredentialsInput: AuthCredentialsInput): Promise<void> {
-    return await this.usersRepository.createUser(authCredentialsInput);
+  async findById(id: string): Promise<User> {
+    return await this.usersRepository.findOne({ id });
   }
 
-  async signIn(authCredentialsInput: AuthCredentialsInput): Promise<JwtToken> {
-    const { username, password } = authCredentialsInput;
+  async create(input: CreateUserInput): Promise<User> {
+    const { username, password, email } = input;
+    const message = 'Email has already been taken.';
+
+    const existedUser = await this.usersRepository.findOne({ email });
+
+    if (existedUser) {
+      throw new Error(message);
+    }
+
+    const user = new User();
+    user.username = username;
+    user.password = password;
+    user.email = email;
+    return await this.usersRepository.save(user);
+  }
+
+  async update(id: string, input: UpdateUserInput): Promise<boolean> {
+    const { username, password, email } = input;
+
+    // const updatedUser = await this.usersRepository.updateOne({ id }, { $set: { input } })
+
+    const user = await this.usersRepository.findOne({ id });
+    console.log(user);
+    user.username = username;
+    user.password = password;
+    user.email = email;
+
+    return (await this.usersRepository.save(user)) ? true : false;
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const user = new User();
+    user.id = id;
+    return (await this.usersRepository.remove(user)) ? true : false;
+  }
+
+  async deleteAll(): Promise<boolean> {
+    return (await this.usersRepository.deleteMany({})) ? true : false;
+  }
+
+  async login(input: LoginUserInput): Promise<LoginResponse> {
+    const { username, password } = input;
+    const message = 'Incorrect email or password. Please try again.';
+
     const user = await this.usersRepository.findOne({ username });
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const payload: JwtPayload = { username, sub: user.id };
-
-      return {
-        accessToken: this.jwtService.sign(payload),
-      };
-    } else {
-      throw new UnauthorizedException('Incorrect username or password!');
+    if (!user || !(await user.matchesPassword(password))) {
+      throw new AuthenticationError(message);
     }
+
+    const token = await jwt.sign(
+      {
+        // issuer: 'http://chnirt.dev.io',
+        subject: user.id,
+        audience: user.username,
+      },
+      jwtConstants,
+      {
+        expiresIn: '30d',
+      },
+    );
+
+    return { token };
   }
-  // async signIn(user: any): Promise<{ accessToken: string }> {
-  //   const payload = { username: user.username, sub: user.id };
-  //   return {
-  //     accessToken: this.jwtService.sign(payload),
-  //   };
+
+  async findOneByToken(token: string) {
+    const message = 'The token you provided was invalid.';
+    let currentUser;
+
+    try {
+      const decodeToken = await jwt.verify(token, jwtConstants);
+
+      currentUser = await this.usersRepository.findOne({
+        id: atob(decodeToken.split('.')[1]),
+        // id: decodeToken,
+      });
+    } catch (error) {
+      throw new AuthenticationError(message);
+    }
+
+    return currentUser;
+  }
+
+  async setRole(id: string, role: string): Promise<boolean> {
+    return (await this.usersRepository.updateOne({ id }, { $set: { role } }))
+      ? true
+      : false;
+  }
+
+  // async validateUser(username: string, pass: string): Promise<any> {
+  //   const user = await this.usersRepository.findOne(username);
+  //   if (user && user.password === pass) {
+  //     const { password, ...result } = user;
+
+  //     return result;
+  //   }
+  //   return null;
   // }
-
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersRepository.findOne(username);
-    if (user && user.password === pass) {
-      const { password, ...result } = user;
-
-      return result;
-    }
-    return null;
-  }
 }

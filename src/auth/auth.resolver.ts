@@ -1,41 +1,85 @@
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { AuthService } from './auth.service';
-import { User } from './user.entity';
-import { UserType } from './user.type';
-import { AuthCredentialsInput } from './inputs/auth-credentials.input';
 import {
-  ClassSerializerInterceptor,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
-import { GqlAuthGuard } from './guards/gql-auth.guard';
-import { CurrentUser } from './decorators/get-user.decorator';
-import { JwtToken } from './interfaces/jwt-token.interface';
+  Args,
+  Context,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
+import { UpdateUserInput } from '../graphql';
+import { AuthService } from './auth.service';
 
-@Resolver(() => UserType)
+import {
+  CreateUserInput,
+  LoginResponse,
+  LoginUserInput,
+  User,
+} from './user.entity';
+
+@Resolver('User')
 export class AuthResolver {
   constructor(private authService: AuthService) {}
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @UseGuards(GqlAuthGuard)
-  @Query(() => UserType)
-  getUserById(@Args('id') id: string): Promise<User> {
-    return this.authService.getUserById(id);
+  @Query(() => String)
+  async hello() {
+    return await 'world';
   }
 
-  @Mutation(() => UserType)
-  signUp(
-    @CurrentUser()
-    @Args('input')
-    authCredentialsInput: AuthCredentialsInput,
-  ): Promise<void> {
-    return this.authService.signUp(authCredentialsInput);
+  @Query(() => User)
+  async me(@Context('currentUser') currentUser: User) {
+    return await currentUser;
   }
 
-  @Mutation(() => UserType)
-  signIn(
-    @Args('input') authCredentialsInput: AuthCredentialsInput,
-  ): Promise<JwtToken> {
-    return this.authService.signIn(authCredentialsInput);
+  @Query(() => [User])
+  async users(@Args('offset') offset: number, @Args('limit') limit: number) {
+    return this.authService.findAll(offset, limit);
+  }
+
+  @Query(() => User)
+  async user(@Args('id') id: string) {
+    return this.authService.findById(id);
+  }
+
+  @Mutation(() => User, { name: 'register' })
+  async createUser(
+    @Args('input') input: CreateUserInput,
+    @Context('pubSub') pubSub,
+  ) {
+    const createdUser = await this.authService.create(input);
+    pubSub.publish('userCreated', { userCreated: createdUser });
+    return createdUser;
+  }
+
+  @Mutation(() => Boolean)
+  async updateUser(
+    @Args('id') id: string,
+    @Args('input') input: UpdateUserInput,
+  ) {
+    return await this.authService.update(id, input);
+  }
+
+  @Mutation(() => Boolean)
+  async deleteUser(@Args('id') id: string) {
+    return await this.authService.delete(id);
+  }
+
+  @Mutation(() => Boolean)
+  async deleteUsers() {
+    return await this.authService.deleteAll();
+  }
+
+  @Mutation(() => LoginResponse)
+  async login(@Args('input') input: LoginUserInput) {
+    return await this.authService.login(input);
+  }
+
+  @Mutation(() => Boolean)
+  async setRole(@Args('id') id: string, @Args('role') role: string) {
+    return await this.authService.setRole(id, role);
+  }
+
+  @Subscription()
+  userCreated(@Context('pubSub') pubSub: any) {
+    return pubSub.asyncIterator('userCreated');
   }
 }

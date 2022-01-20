@@ -1,16 +1,13 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class UserType {
+export class ResetType {
   @Field(() => ID)
   id: string;
 
   @Field()
-  username: string;
+  email: string;
 
   @Field()
-  password: string;
-
-  @Field({ nullable: true })
-  accessToken: string;
+  token: string;
 }
