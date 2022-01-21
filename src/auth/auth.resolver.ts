@@ -1,3 +1,4 @@
+import { Inject } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -6,6 +7,7 @@ import {
   Resolver,
   Subscription,
 } from '@nestjs/graphql';
+import { PubSubEngine } from 'graphql-subscriptions';
 import { UpdateUserInput } from '../graphql';
 import { AuthService } from './auth.service';
 
@@ -18,7 +20,10 @@ import {
 
 @Resolver('User')
 export class AuthResolver {
-  constructor(private authService: AuthService) {}
+  constructor(
+    @Inject('PUB_SUB') private pubSub: PubSubEngine,
+    private authService: AuthService,
+  ) {}
 
   @Query(() => String)
   async hello() {
@@ -46,7 +51,7 @@ export class AuthResolver {
     @Context('pubSub') pubSub,
   ) {
     const createdUser = await this.authService.create(input);
-    pubSub.publish('userCreated', { userCreated: createdUser });
+    this.pubSub.publish('userCreated', { userCreated: createdUser });
     return createdUser;
   }
 
@@ -78,8 +83,8 @@ export class AuthResolver {
     return await this.authService.setRole(id, role);
   }
 
-  @Subscription()
+  @Subscription('userCreated')
   userCreated(@Context('pubSub') pubSub: any) {
-    return pubSub.asyncIterator('userCreated');
+    return this.pubSub.asyncIterator('userCreated');
   }
 }

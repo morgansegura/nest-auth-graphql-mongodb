@@ -2,12 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { GqlOptionsFactory, GqlModuleOptions } from '@nestjs/graphql';
 import { MemcachedCache } from 'apollo-server-cache-memcached';
 import { PubSub } from 'graphql-subscriptions';
-// import { GraphQLError } from 'graphql';
 import { join } from 'path';
 import { AuthService } from '../../auth/auth.service';
 
 const pubSub = new PubSub();
-
 @Injectable()
 export class GraphqlService implements GqlOptionsFactory {
   constructor(private readonly authService: AuthService) {}
@@ -17,10 +15,8 @@ export class GraphqlService implements GqlOptionsFactory {
       isAuthenticated: (next, source, args, ctx) => {
         const { currentUser } = ctx;
 
-        console.log({ next }, { source }, { args }, { ctx });
-
         if (!currentUser) {
-          throw new Error('You are not authenticated! not a user');
+          throw new Error('You are not authenticated! Balls');
         }
 
         return next();
@@ -57,9 +53,9 @@ export class GraphqlService implements GqlOptionsFactory {
           };
         }
 
-        let currentUser = '';
+        let currentUser = {};
 
-        const { token } = req.headers;
+        const token = (req.headers.authorization || '').replace('Bearer ', '');
 
         if (token) {
           currentUser = await this.authService.findOneByToken(token);
@@ -72,32 +68,20 @@ export class GraphqlService implements GqlOptionsFactory {
           currentUser,
         };
       },
+      installSubscriptionHandlers: true,
       formatError: err => {
-        // console.log(err)
         return err;
       },
       formatResponse: err => {
-        // console.log(err)
         return err;
       },
       debug: false,
-      // subscriptions: {
-      //   onConnect: (connectionParams, webSocket, context) => {
-      //     console.log(
-      //       '🔗 Connected to websocket',
-      //       { connectionParams },
-      //       { webSocket },
-      //       { context },
-      //     );
-      //   },
-      // },
       persistedQueries: {
         cache: new MemcachedCache(
           ['memcached-server-1', 'memcached-server-2', 'memcached-server-3'],
           { retries: 10, retry: 10000 }, // Options
         ),
       },
-      installSubscriptionHandlers: true,
       introspection: true,
       playground: {
         settings: {

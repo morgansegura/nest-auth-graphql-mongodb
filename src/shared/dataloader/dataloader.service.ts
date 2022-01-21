@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as DataLoader from 'dataloader';
+// import * as DataLoader from 'dataloader';
 import { AuthService } from '../../auth/auth.service';
 
 // type BatchUser = (ids: string[]) => Promise<User[]>

@@ -55,7 +55,7 @@ export class AuthService {
     // const updatedUser = await this.usersRepository.updateOne({ id }, { $set: { input } })
 
     const user = await this.usersRepository.findOne({ id });
-    console.log(user);
+
     user.username = username;
     user.password = password;
     user.email = email;
@@ -85,9 +85,8 @@ export class AuthService {
 
     const token = await jwt.sign(
       {
-        // issuer: 'http://chnirt.dev.io',
-        subject: user.id,
-        audience: user.username,
+        username: user.username,
+        sub: user.id,
       },
       jwtConstants,
       {
@@ -100,14 +99,12 @@ export class AuthService {
 
   async findOneByToken(token: string) {
     const message = 'The token you provided was invalid.';
-    let currentUser;
+    let currentUser = {};
 
     try {
       const decodeToken = await jwt.verify(token, jwtConstants);
-
       currentUser = await this.usersRepository.findOne({
-        id: atob(decodeToken.split('.')[1]),
-        // id: decodeToken,
+        id: decodeToken.sub.toString(),
       });
     } catch (error) {
       throw new AuthenticationError(message);
@@ -121,14 +118,4 @@ export class AuthService {
       ? true
       : false;
   }
-
-  // async validateUser(username: string, pass: string): Promise<any> {
-  //   const user = await this.usersRepository.findOne(username);
-  //   if (user && user.password === pass) {
-  //     const { password, ...result } = user;
-
-  //     return result;
-  //   }
-  //   return null;
-  // }
 }
