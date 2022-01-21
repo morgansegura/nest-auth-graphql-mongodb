@@ -53,7 +53,7 @@ type Mutation {
   deleteUser(id: String!): Boolean @hasRole(role: "admin")
   deleteUsers: Boolean! @hasRole(role: "admin")
   login(input: LoginUserInput!): LoginResponse
-  setRole(id: String!, role: RoleEnum!): Boolean @isAuthenticated
+  setRole(id: String!, role: RoleEnum!): Boolean @hasRole(role: "admin")
 }
 
 type Subscription {

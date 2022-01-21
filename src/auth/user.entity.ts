@@ -76,16 +76,6 @@ export class User {
   @IsNotEmpty()
   username: string;
 
-  @Column({ nullable: true })
-  @IsString()
-  @IsNotEmpty()
-  firstName?: string;
-
-  @Column({ nullable: true })
-  @IsString()
-  @IsNotEmpty()
-  lastName?: string;
-
   @Column()
   @IsString()
   @IsNotEmpty()

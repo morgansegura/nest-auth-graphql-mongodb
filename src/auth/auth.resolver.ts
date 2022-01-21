@@ -18,7 +18,7 @@ import {
   User,
 } from './user.entity';
 
-@Resolver('User')
+@Resolver('Users')
 export class AuthResolver {
   constructor(
     @Inject('PUB_SUB') private pubSub: PubSubEngine,

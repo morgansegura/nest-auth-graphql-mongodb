@@ -11,6 +11,7 @@ import * as jwt from 'jsonwebtoken';
 import { AuthenticationError } from 'apollo-server-core';
 import { jwtConstants } from '../config/constants';
 import { UpdateUserInput } from '../graphql';
+import * as generateUsername from 'better-usernames';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +34,7 @@ export class AuthService {
   }
 
   async create(input: CreateUserInput): Promise<User> {
-    const { username, password, email } = input;
+    const { password, email } = input;
     const message = 'Email has already been taken.';
 
     const existedUser = await this.usersRepository.findOne({ email });
@@ -43,16 +44,19 @@ export class AuthService {
     }
 
     const user = new User();
-    user.username = username;
+    user.username = generateUsername();
     user.password = password;
     user.email = email;
-    return await this.usersRepository.save(user);
+
+    try {
+      return await this.usersRepository.save(user);
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   async update(id: string, input: UpdateUserInput): Promise<boolean> {
     const { username, password, email } = input;
-
-    // const updatedUser = await this.usersRepository.updateOne({ id }, { $set: { input } })
 
     const user = await this.usersRepository.findOne({ id });
 
