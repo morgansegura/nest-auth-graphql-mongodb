@@ -8,7 +8,7 @@ import {
   Subscription,
 } from '@nestjs/graphql';
 import { PubSubEngine } from 'graphql-subscriptions';
-import { UpdateUserInput } from '../graphql';
+import { UpdateUserInput } from '../../graphql';
 import { AuthService } from './auth.service';
 
 import {

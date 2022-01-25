@@ -1,6 +1,6 @@
 import { CacheModule, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './models/auth/auth.module';
 import { TypeormService } from './config/typeorm/typeorm.service';
 import { CacheService } from './config/cache/cache.service';
 import { GraphqlService } from './config/graphql/graphql.service';

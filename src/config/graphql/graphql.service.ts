@@ -3,7 +3,7 @@ import { GqlOptionsFactory, GqlModuleOptions } from '@nestjs/graphql';
 import { MemcachedCache } from 'apollo-server-cache-memcached';
 import { PubSub } from 'graphql-subscriptions';
 import { join } from 'path';
-import { AuthService } from '../../auth/auth.service';
+import { AuthService } from '../../models/auth/auth.service';
 
 const pubSub = new PubSub();
 @Injectable()
@@ -66,6 +66,10 @@ export class GraphqlService implements GqlOptionsFactory {
           pubSub,
           currentUser,
         };
+      },
+      cors: {
+        credentials: true,
+        origin: true,
       },
       installSubscriptionHandlers: true,
       formatError: err => {

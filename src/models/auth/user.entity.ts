@@ -23,12 +23,9 @@ import {
 } from 'typeorm';
 
 export class LoginUserInput {
-  @IsString()
-  @MinLength(4, {
-    message: 'Your username must be at least 4 characters',
-  })
-  @IsNotEmpty()
-  username: string;
+  @IsEmail(undefined, { message: 'Invalid email message' })
+  @IsNotEmpty({ message: 'Your email can not be blank.' })
+  email: string;
   @Length(1, 23, {
     message: 'Your password must be between 1 and 23 characters.',
   })

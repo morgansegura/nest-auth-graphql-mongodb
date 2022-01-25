@@ -26,7 +26,7 @@ export class UpdateUserInput {
 }
 
 export class LoginUserInput {
-    username: string;
+    email: string;
     password: string;
 }
 

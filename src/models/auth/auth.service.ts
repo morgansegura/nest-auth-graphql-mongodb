@@ -9,8 +9,8 @@ import {
 import { MongoRepository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { AuthenticationError } from 'apollo-server-core';
-import { jwtConstants } from '../config/constants';
-import { UpdateUserInput } from '../graphql';
+import { jwtConstants } from '../../config/constants';
+import { UpdateUserInput } from '../../graphql';
 import * as generateUsername from 'better-usernames';
 
 @Injectable()
@@ -78,10 +78,10 @@ export class AuthService {
   }
 
   async login(input: LoginUserInput): Promise<LoginResponse> {
-    const { username, password } = input;
+    const { email, password } = input;
     const message = 'Incorrect email or password. Please try again.';
 
-    const user = await this.usersRepository.findOne({ username });
+    const user = await this.usersRepository.findOne({ email });
 
     if (!user || !(await user.matchesPassword(password))) {
       throw new AuthenticationError(message);
