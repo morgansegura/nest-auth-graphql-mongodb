@@ -1,23 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   CreateUserInput,
   LoginResponse,
   LoginUserInput,
   User,
-} from './user.entity';
+} from '../../common/entities/user.entity';
 import { MongoRepository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { AuthenticationError } from 'apollo-server-core';
 import { jwtConstants } from '../../config/constants';
 import { UpdateUserInput } from '../../graphql';
 import * as generateUsername from 'better-usernames';
+import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { TokenPayload } from 'src/common/interfaces/tokenPayload.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: MongoRepository<User>,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async findAll(offset: number, limit: number): Promise<User[]> {
@@ -31,6 +37,10 @@ export class AuthService {
 
   async findById(id: string): Promise<User> {
     return await this.usersRepository.findOne({ id });
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    return await this.usersRepository.findOne({ email });
   }
 
   async create(input: CreateUserInput): Promise<User> {
@@ -92,7 +102,7 @@ export class AuthService {
         username: user.username,
         sub: user.id,
       },
-      jwtConstants,
+      `${process.env.JWT_TOKEN}`,
       {
         expiresIn: '30d',
       },
@@ -106,7 +116,7 @@ export class AuthService {
     let currentUser = {};
 
     try {
-      const decodeToken = await jwt.verify(token, jwtConstants);
+      const decodeToken = await jwt.verify(token, jwtConstants.secret);
       currentUser = await this.usersRepository.findOne({
         id: decodeToken.sub.toString(),
       });
@@ -121,5 +131,45 @@ export class AuthService {
     return (await this.usersRepository.updateOne({ id }, { $set: { role } }))
       ? true
       : false;
+  }
+
+  async getAuthenticatedUser(email: string, hashedPassword: string) {
+    try {
+      const user = await this.findByEmail(email);
+      const isPasswordMatching = await bcrypt.compare(
+        hashedPassword,
+        user.password,
+      );
+      if (!isPasswordMatching) {
+        throw new HttpException(
+          'Wrong credentials provided',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      user.password = undefined;
+      return user;
+    } catch (error) {
+      throw new HttpException(
+        'Wrong credentials provided',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  getCookieWithJwtToken(id: string) {
+    const payload: TokenPayload = { id };
+    const token = this.jwtService.sign(payload);
+    return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get(
+      'JWT_EXPIRATION_TIME',
+    )}`;
+  }
+
+  async markEmailAsConfirmed(email: string) {
+    return this.usersRepository.update(
+      { email },
+      {
+        isEmailConfirmed: true,
+      },
+    );
   }
 }

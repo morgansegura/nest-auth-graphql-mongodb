@@ -8,9 +8,16 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { GraphqlModule } from './config/graphql/graphql.module';
 import { TypeormModule } from './config/typeorm/typeorm.module';
 import { DataloaderModule } from './shared/dataloader/dataloader.module';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({
+      envFilePath: ['.env.development.local', '.env.development'],
+      isGlobal: true,
+    }),
     TypeOrmModule.forRootAsync({
       useClass: TypeormService,
     }),
@@ -20,22 +27,7 @@ import { DataloaderModule } from './shared/dataloader/dataloader.module';
     GraphQLModule.forRootAsync({
       useClass: GraphqlService,
     }),
-    // GraphQLModule.forRoot({
-    //   autoSchemaFile: true,
-    //   installSubscriptionHandlers: true,
-    //   context: ({ req, res }) => {
-    //     return { request: req, response: res };
-    //   },
-    //   formatError: error => {
-    //     const graphQLFormattedError = {
-    //       message:
-    //         error.extensions?.exception?.response?.message || error.message,
-    //       code: error.extensions?.code || 'SERVER_ERROR',
-    //       name: error.extensions?.exception?.name || error.name,
-    //     };
-    //     return graphQLFormattedError;
-    //   },
-    // }),
+
     AuthModule,
     GraphqlModule,
     TypeormModule,

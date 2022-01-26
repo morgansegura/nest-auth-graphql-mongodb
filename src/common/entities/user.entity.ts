@@ -95,6 +95,11 @@ export class User {
   @IsNotEmpty()
   status: boolean;
 
+  @Column()
+  @IsBoolean()
+  @IsNotEmpty()
+  isEmailConfirmed: boolean;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: string;
   @UpdateDateColumn({ type: 'timestamp' })

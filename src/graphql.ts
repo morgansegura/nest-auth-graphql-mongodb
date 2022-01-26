@@ -42,6 +42,7 @@ export class User {
     email: string;
     role: RoleEnum;
     status: boolean;
+    isEmailConfirmed: boolean;
     createdAt: string;
     updatedAt: string;
 }

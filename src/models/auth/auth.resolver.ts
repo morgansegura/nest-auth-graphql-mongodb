@@ -1,4 +1,10 @@
-import { Inject } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  HttpException,
+  HttpStatus,
+  Inject,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   Args,
   Context,
@@ -16,13 +22,16 @@ import {
   LoginResponse,
   LoginUserInput,
   User,
-} from './user.entity';
+} from '../../common/entities/user.entity';
+import { EmailConfirmationService } from '../email/emailConfirmation.service';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @Resolver('Users')
 export class AuthResolver {
   constructor(
     @Inject('PUB_SUB') private pubSub: PubSubEngine,
     private authService: AuthService,
+    private readonly emailConfirmationService: EmailConfirmationService,
   ) {}
 
   @Query(() => String)
@@ -51,8 +60,15 @@ export class AuthResolver {
     @Context('pubSub') pubSub,
   ) {
     const createdUser = await this.authService.create(input);
-    this.pubSub.publish('userCreated', { userCreated: createdUser });
-    return createdUser;
+    await this.emailConfirmationService
+      .sendVerificationLink(input.email)
+      .then(() => {
+        this.pubSub.publish('userCreated', { userCreated: createdUser });
+        return createdUser;
+      })
+      .catch(errors => {
+        throw new Error(errors);
+      });
   }
 
   @Mutation(() => Boolean)
