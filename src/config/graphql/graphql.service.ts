@@ -16,7 +16,7 @@ export class GraphqlService implements GqlOptionsFactory {
         const { currentUser } = ctx;
 
         if (!currentUser) {
-          throw new Error('You are not authenticated! Balls');
+          throw new Error('You are not authenticated!');
         }
 
         return next();
@@ -29,8 +29,21 @@ export class GraphqlService implements GqlOptionsFactory {
         }
 
         if (currentUser.role !== role) {
-          console.log(role);
           throw new Error(`You do not have access to perform this action!`);
+        }
+
+        return next();
+      },
+      hasConfirmedEmail: (next, source, args, ctx) => {
+        const { isEmailConfirmed } = args;
+
+        const { currentUser } = ctx;
+        if (!currentUser) {
+          throw new Error('You are not authenticated!');
+        }
+
+        if (!isEmailConfirmed) {
+          throw new Error('Please validate your email!');
         }
 
         return next();

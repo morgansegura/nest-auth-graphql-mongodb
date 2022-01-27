@@ -110,12 +110,14 @@ export class User {
     this.id = await uuid.v4();
     this.role = await 'MEMBER';
     this.status = await true;
+    this.isEmailConfirmed = await false;
     this.password = await bcrypt.hash(this.password, 10);
   }
 
   @BeforeUpdate()
   async b4update() {
     this.password = await bcrypt.hash(this.password, 10);
+    this.isEmailConfirmed = await true;
   }
 
   @BeforeRemove()

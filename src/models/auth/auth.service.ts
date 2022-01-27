@@ -15,7 +15,8 @@ import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { TokenPayload } from 'src/common/interfaces/tokenPayload.interface';
+
+import { VerificationTokenPayload } from '../../common/interfaces/verificationTokenPayload.interface';
 
 @Injectable()
 export class AuthService {
@@ -48,7 +49,6 @@ export class AuthService {
     const message = 'Email has already been taken.';
 
     const existedUser = await this.usersRepository.findOne({ email });
-
     if (existedUser) {
       throw new Error(message);
     }
@@ -58,6 +58,7 @@ export class AuthService {
     user.password = password;
     user.email = email;
 
+    console.log({ user });
     try {
       return await this.usersRepository.save(user);
     } catch (error) {
@@ -97,7 +98,7 @@ export class AuthService {
       throw new AuthenticationError(message);
     }
 
-    const token = await jwt.sign(
+    const token = jwt.sign(
       {
         username: user.username,
         sub: user.id,
@@ -156,20 +157,35 @@ export class AuthService {
     }
   }
 
-  getCookieWithJwtToken(id: string) {
-    const payload: TokenPayload = { id };
-    const token = this.jwtService.sign(payload);
+  async getCookieWithJwtToken(email: string) {
+    const payload: VerificationTokenPayload = { email };
+
+    const user = await this.findByEmail(payload.email);
+
+    const token = jwt.sign(
+      {
+        username: user.username,
+        sub: user.id,
+      },
+      `${process.env.JWT_TOKEN}`,
+      {
+        expiresIn: '30d',
+      },
+    );
+
     return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get(
       'JWT_EXPIRATION_TIME',
     )}`;
   }
 
-  async markEmailAsConfirmed(email: string) {
-    return this.usersRepository.update(
+  async markEmailAsConfirmed(email: string): Promise<boolean> {
+    return (await this.usersRepository.update(
       { email },
       {
         isEmailConfirmed: true,
       },
-    );
+    ))
+      ? true
+      : false;
   }
 }

@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export const jwtConstants = {
-  secret: process.env.SESSION_TOKEN_NAME,
+  secret: process.env.JWT_SECRET,
   expirationTime: 21600,
   emailConfirmUrl: 'http://localhost:3000/confirm-email',
 };

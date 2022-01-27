@@ -1,7 +1,5 @@
 import {
   ClassSerializerInterceptor,
-  HttpException,
-  HttpStatus,
   Inject,
   UseInterceptors,
 } from '@nestjs/common';
@@ -60,15 +58,10 @@ export class AuthResolver {
     @Context('pubSub') pubSub,
   ) {
     const createdUser = await this.authService.create(input);
-    await this.emailConfirmationService
-      .sendVerificationLink(input.email)
-      .then(() => {
-        this.pubSub.publish('userCreated', { userCreated: createdUser });
-        return createdUser;
-      })
-      .catch(errors => {
-        throw new Error(errors);
-      });
+    this.pubSub.publish('userCreated', { userCreated: createdUser });
+    await this.emailConfirmationService.sendVerificationLink(input.email);
+
+    return createdUser;
   }
 
   @Mutation(() => Boolean)
@@ -97,6 +90,14 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async setRole(@Args('id') id: string, @Args('role') role: string) {
     return await this.authService.setRole(id, role);
+  }
+
+  @Mutation(() => Boolean)
+  async confirmEmail(@Args('token') token: string) {
+    const confirmUser =
+      await this.emailConfirmationService.decodeConfirmationToken(token);
+
+    return await this.authService.markEmailAsConfirmed(confirmUser);
   }
 
   @Subscription('userCreated')

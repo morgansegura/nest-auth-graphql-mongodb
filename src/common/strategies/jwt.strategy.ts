@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { TokenPayload } from '../interfaces/tokenPayload.interface';
 import { AuthService } from 'src/models/auth/auth.service';
+import { VerificationTokenPayload } from '../interfaces/verificationTokenPayload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: configService.get('JWT_SECRET'),
     });
   }
-  async validate(payload: TokenPayload) {
-    return this.authService.findById(payload.id);
+  async validate(payload: VerificationTokenPayload) {
+    return this.authService.findByEmail(payload.email);
   }
 }

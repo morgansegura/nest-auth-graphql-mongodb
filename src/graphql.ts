@@ -25,6 +25,10 @@ export class UpdateUserInput {
     email?: Nullable<string>;
 }
 
+export class TokenInput {
+    token: string;
+}
+
 export class LoginUserInput {
     email: string;
     password: string;
@@ -69,6 +73,8 @@ export abstract class IMutation {
     abstract login(input: LoginUserInput): Nullable<LoginResponse> | Promise<Nullable<LoginResponse>>;
 
     abstract setRole(id: string, role: RoleEnum): Nullable<boolean> | Promise<Nullable<boolean>>;
+
+    abstract confirmEmail(token: string): Nullable<boolean> | Promise<Nullable<boolean>>;
 }
 
 export abstract class ISubscription {
