@@ -12,7 +12,6 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'src/common/strategies/jwt.strategy';
-import { EmailConfirmationService } from '../email/emailConfirmation.service';
 import { EmailModule } from '../email/email.module';
 
 @Global()
@@ -38,7 +37,6 @@ import { EmailModule } from '../email/email.module';
     AuthResolver,
     LocalStrategy,
     JwtStrategy,
-    EmailConfirmationService,
     {
       provide: 'PUB_SUB',
       useFactory: () => {

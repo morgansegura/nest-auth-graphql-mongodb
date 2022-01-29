@@ -10,11 +10,9 @@ import { MongoRepository } from 'typeorm';
 import { AuthenticationError } from 'apollo-server-core';
 import { jwtConstants } from '../../config/constants';
 import { UpdateUserInput } from '../../graphql';
-import * as generateUsername from 'better-usernames';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
 
 import { VerificationTokenPayload } from '../../common/interfaces/verificationTokenPayload.interface';
 
@@ -23,7 +21,6 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: MongoRepository<User>,
-    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -40,6 +37,10 @@ export class AuthService {
     return await this.usersRepository.findOne({ id });
   }
 
+  async findByUsername(username: string): Promise<User> {
+    return await this.usersRepository.findOne({ username });
+  }
+
   async findByEmail(email: string): Promise<User> {
     return await this.usersRepository.findOne({ email });
   }
@@ -54,11 +55,9 @@ export class AuthService {
     }
 
     const user = new User();
-    user.username = generateUsername();
     user.password = password;
     user.email = email;
 
-    console.log({ user });
     try {
       return await this.usersRepository.save(user);
     } catch (error) {
@@ -103,7 +102,7 @@ export class AuthService {
         username: user.username,
         sub: user.id,
       },
-      `${process.env.JWT_TOKEN}`,
+      `${this.configService.get('JWT_SECRET')}`,
       {
         expiresIn: '30d',
       },
@@ -167,7 +166,7 @@ export class AuthService {
         username: user.username,
         sub: user.id,
       },
-      `${process.env.JWT_TOKEN}`,
+      `${this.configService.get('JWT_SECRET')}`,
       {
         expiresIn: '30d',
       },
@@ -178,11 +177,11 @@ export class AuthService {
     )}`;
   }
 
-  async markEmailAsConfirmed(email: string): Promise<boolean> {
-    return (await this.usersRepository.update(
-      { email },
+  async markEmailAsConfirmed(id: string): Promise<boolean> {
+    return (await this.usersRepository.updateOne(
+      { id },
       {
-        isEmailConfirmed: true,
+        $set: { isEmailConfirmed: true },
       },
     ))
       ? true

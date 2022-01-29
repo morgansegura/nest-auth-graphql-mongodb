@@ -1,6 +1,7 @@
 directive @isAuthenticated on FIELD | FIELD_DEFINITION
 directive @hasRole(role: String) on FIELD | FIELD_DEFINITION
-directive @hasConfirmedEmail(
+directive @hasConfirmedEmail on FIELD | FIELD_DEFINITION
+directive @setConfirmEmail(
   isEmailConfirmed: Boolean
 ) on FIELD | FIELD_DEFINITION
 
@@ -11,7 +12,6 @@ enum RoleEnum {
 }
 
 input CreateUserInput {
-  username: String!
   password: String!
   email: String!
 }
@@ -56,14 +56,14 @@ type Query {
 }
 
 type Mutation {
-  register(input: CreateUserInput!): User
+  signup(input: CreateUserInput!): User
   updateUser(id: String!, input: UpdateUserInput!): Boolean
   deleteUser(id: String!): Boolean @hasRole(role: "admin")
   deleteUsers: Boolean! @hasRole(role: "admin")
-  login(input: LoginUserInput!): LoginResponse
+  login(input: LoginUserInput!): LoginResponse @hasConfirmedEmail
   setRole(id: String!, role: RoleEnum!): Boolean @hasRole(role: "admin")
-  confirmEmail(token: String!): Boolean
-    @hasConfirmedEmail(isEmailConfirmed: true)
+  confirmEmail(token: String!): Boolean @setConfirmEmail(isEmailConfirmed: true)
+  resendConfirmationLink(id: String!): Boolean
 }
 
 type Subscription {

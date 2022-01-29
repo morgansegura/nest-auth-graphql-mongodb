@@ -48,6 +48,20 @@ export class GraphqlService implements GqlOptionsFactory {
 
         return next();
       },
+      setConfirmEmail: (next, source, args, ctx) => {
+        const { isEmailConfirmed } = args;
+
+        const { currentUser } = ctx;
+        if (!currentUser) {
+          throw new Error('You are not authenticated!');
+        }
+
+        if (!isEmailConfirmed) {
+          throw new Error('Please validate your email!');
+        }
+
+        return next();
+      },
     };
 
     return {

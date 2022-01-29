@@ -52,7 +52,7 @@ export class AuthResolver {
     return this.authService.findById(id);
   }
 
-  @Mutation(() => User, { name: 'register' })
+  @Mutation(() => User, { name: 'signup' })
   async createUser(
     @Args('input') input: CreateUserInput,
     @Context('pubSub') pubSub,
@@ -98,6 +98,11 @@ export class AuthResolver {
       await this.emailConfirmationService.decodeConfirmationToken(token);
 
     return await this.authService.markEmailAsConfirmed(confirmUser);
+  }
+
+  @Mutation(() => Boolean)
+  async resendConfirmationLink(@Args('id') id: string) {
+    return await this.emailConfirmationService.resendConfirmationLink(id);
   }
 
   @Subscription('userCreated')

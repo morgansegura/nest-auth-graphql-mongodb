@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import EmailService from '../email/email.service';
@@ -10,28 +9,29 @@ import { jwtConstants } from 'src/config/constants';
 @Injectable()
 export class EmailConfirmationService {
   constructor(
-    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly authService: AuthService,
   ) {}
-  public async confirmEmail(email: string) {
-    const user = await this.authService.findByEmail(email);
+  public async confirmEmail(id: string) {
+    const user = await this.authService.findById(id);
+
     if (user.isEmailConfirmed) {
       throw new BadRequestException('Email already confirmed');
     }
-    console.log('Email should be confirmed');
-    await this.authService.markEmailAsConfirmed(email);
+
+    await this.authService.markEmailAsConfirmed(id);
   }
 
   public async decodeConfirmationToken(token: string) {
     try {
-      const payload = await this.jwtService.verify(token, {
-        secret: `${jwtConstants.secret}`,
-      });
+      const payload = await jwt.verify(
+        token,
+        `${this.configService.get('JWT_SECRET')}`,
+      );
 
-      if (typeof payload === 'object' && 'username' in payload) {
-        return payload.email;
+      if (typeof payload === 'object' && 'sub' in payload) {
+        return payload.sub;
       }
       throw new BadRequestException();
     } catch (error) {
@@ -44,6 +44,7 @@ export class EmailConfirmationService {
   }
   public async sendVerificationLink(email: string) {
     const payload: VerificationTokenPayload = { email };
+    console.log({ payload });
     const user = await this.authService.findByEmail(payload.email);
 
     const token = jwt.sign(
@@ -51,7 +52,7 @@ export class EmailConfirmationService {
         username: user.username,
         sub: user.id,
       },
-      `${process.env.JWT_TOKEN}`,
+      `${this.configService.get('JWT_SECRET')}`,
       {
         expiresIn: `${this.configService.get('JWT_EXPIRATION_TIME')}s`,
       },
@@ -64,9 +65,17 @@ export class EmailConfirmationService {
     const text = `Welcome to the application. To confirm the email address, click here: ${url}`;
 
     return this.emailService.sendMail({
-      to: email,
+      to: user.email,
       subject: 'Email confirmation',
       text,
     });
+  }
+
+  public async resendConfirmationLink(id: string) {
+    const user = await this.authService.findById(id);
+    if (user.isEmailConfirmed) {
+      throw new BadRequestException('Email already confirmed');
+    }
+    await this.sendVerificationLink(user.email);
   }
 }

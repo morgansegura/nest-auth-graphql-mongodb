@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import * as uuid from 'uuid';
 import * as bcrypt from 'bcrypt';
+import * as generateUsername from 'better-usernames';
 import {
   BeforeInsert,
   BeforeRemove,
@@ -35,12 +36,12 @@ export class LoginUserInput {
 }
 
 export class CreateUserInput {
-  @IsString()
-  @MinLength(4, {
-    message: 'Your username must be at least 4 characters',
-  })
-  @IsNotEmpty({ message: 'Your username can not be blank.' })
-  username: string;
+  // @IsString()
+  // @MinLength(4, {
+  //   message: 'Your username must be at least 4 characters',
+  // })
+  // @IsNotEmpty({ message: 'Your username can not be blank.' })
+  // username?: string;
 
   @Length(1, 23, {
     message: 'Your password must be between 1 and 23 characters.',
@@ -108,6 +109,7 @@ export class User {
   @BeforeInsert()
   async b4register() {
     this.id = await uuid.v4();
+    this.username = await generateUsername();
     this.role = await 'MEMBER';
     this.status = await true;
     this.isEmailConfirmed = await false;

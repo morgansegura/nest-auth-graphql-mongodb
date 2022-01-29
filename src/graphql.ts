@@ -14,7 +14,6 @@ export enum RoleEnum {
 }
 
 export class CreateUserInput {
-    username: string;
     password: string;
     email: string;
 }
@@ -62,7 +61,7 @@ export abstract class IQuery {
 }
 
 export abstract class IMutation {
-    abstract register(input: CreateUserInput): Nullable<User> | Promise<Nullable<User>>;
+    abstract signup(input: CreateUserInput): Nullable<User> | Promise<Nullable<User>>;
 
     abstract updateUser(id: string, input: UpdateUserInput): Nullable<boolean> | Promise<Nullable<boolean>>;
 
@@ -75,6 +74,8 @@ export abstract class IMutation {
     abstract setRole(id: string, role: RoleEnum): Nullable<boolean> | Promise<Nullable<boolean>>;
 
     abstract confirmEmail(token: string): Nullable<boolean> | Promise<Nullable<boolean>>;
+
+    abstract resendConfirmationLink(id: string): Nullable<boolean> | Promise<Nullable<boolean>>;
 }
 
 export abstract class ISubscription {
