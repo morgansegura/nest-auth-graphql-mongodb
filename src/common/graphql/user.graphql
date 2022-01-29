@@ -60,7 +60,7 @@ type Mutation {
   updateUser(id: String!, input: UpdateUserInput!): Boolean
   deleteUser(id: String!): Boolean @hasRole(role: "admin")
   deleteUsers: Boolean! @hasRole(role: "admin")
-  login(input: LoginUserInput!): LoginResponse @hasConfirmedEmail
+  login(input: LoginUserInput!): LoginResponse
   setRole(id: String!, role: RoleEnum!): Boolean @hasRole(role: "admin")
   confirmEmail(token: String!): Boolean @setConfirmEmail(isEmailConfirmed: true)
   resendConfirmationLink(id: String!): Boolean

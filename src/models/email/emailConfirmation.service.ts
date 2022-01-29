@@ -44,7 +44,7 @@ export class EmailConfirmationService {
   }
   public async sendVerificationLink(email: string) {
     const payload: VerificationTokenPayload = { email };
-    console.log({ payload });
+
     const user = await this.authService.findByEmail(payload.email);
 
     const token = jwt.sign(
